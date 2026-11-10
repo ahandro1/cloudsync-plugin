@@ -1,0 +1,6 @@
+{
+  "name": "CloudSync",
+  "description": "Cross-device watch history and watch-status sync for CloudStream",
+  "manifestVersion": 1,
+  "pluginLists": ["https://raw.githubusercontent.com/ahandro1/cloudsync-plugin/builds/plugins.json"]
+}
