@@ -1,0 +1,97 @@
+Downloading https://services.gradle.org/distributions/gradle-8.12-bin.zip
+..................................................................................................................................
+Unzipping /home/runner/.gradle/wrapper/dists/gradle-8.12-bin/cetblhg4pflnnks72fxwobvgv/gradle-8.12-bin.zip to /home/runner/.gradle/wrapper/dists/gradle-8.12-bin/cetblhg4pflnnks72fxwobvgv
+Set executable permissions for: /home/runner/.gradle/wrapper/dists/gradle-8.12-bin/cetblhg4pflnnks72fxwobvgv/gradle-8.12/bin/gradle
+
+Welcome to Gradle 8.12!
+
+Here are the highlights of this release:
+ - Enhanced error and warning reporting with the Problems API
+ - File-system watching support on Alpine Linux
+ - Build and test Swift 6 libraries and apps
+
+For more details see https://docs.gradle.org/8.12/release-notes.html
+
+Starting a Gradle Daemon (subsequent builds will be faster)
+> Task :checkKotlinGradlePluginConfigurationErrors SKIPPED
+> Task :processResources NO-SOURCE
+> Task :processTestResources NO-SOURCE
+> Task :compileKotlin
+> Task :compileJava NO-SOURCE
+> Task :classes UP-TO-DATE
+> Task :jar
+> Task :compileTestKotlin
+> Task :compileTestJava NO-SOURCE
+> Task :testClasses UP-TO-DATE
+> Task :test
+
+BUILD SUCCESSFUL in 1m 11s
+4 actionable tasks: 4 executed
+Starting a Gradle Daemon, 1 incompatible Daemon could not be reused, use --status for details
+
+> Configure project :CloudSync
+Fetching JAR: cloudstream.jar
+
+> Task :CloudSync:checkKotlinGradlePluginConfigurationErrors SKIPPED
+> Task :CloudSync:preBuild UP-TO-DATE
+> Task :CloudSync:preDebugBuild UP-TO-DATE
+> Task :CloudSync:generateDebugResValues
+> Task :CloudSync:generateDebugResources
+> Task :CloudSync:packageDebugResources
+> Task :CloudSync:parseDebugLocalResources
+> Task :CloudSync:generateDebugRFile
+
+> Task :CloudSync:compileDebugKotlin FAILED
+e: Incompatible classes were found in dependencies. Remove them from the classpath or use '-Xskip-metadata-version-check' to suppress errors
+e: file:///home/runner/.gradle/caches/8.12/transforms/fb3886e53c6153c4309547a333d1b7f4/transformed/jetified-cloudstream.jar!/META-INF/CloudStream_library.kotlin_module Module was compiled with an incompatible version of Kotlin. The binary version of its metadata is 2.4.0, expected version is 2.1.0.
+e: file:///home/runner/.gradle/caches/8.12/transforms/fb3886e53c6153c4309547a333d1b7f4/transformed/jetified-cloudstream.jar!/META-INF/app.kotlin_module Module was compiled with an incompatible version of Kotlin. The binary version of its metadata is 2.4.0, expected version is 2.1.0.
+e: file:///home/runner/work/cloudsync-plugin/cloudsync-plugin/src/CloudSync/src/main/kotlin/com/cloudsync/AniListClient.kt:23:35 Unresolved reference 'app'.
+e: file:///home/runner/work/cloudsync-plugin/cloudsync-plugin/src/CloudSync/src/main/kotlin/com/cloudsync/AniListClient.kt:179:25 Unresolved reference 'post'.
+e: file:///home/runner/work/cloudsync-plugin/cloudsync-plugin/src/CloudSync/src/main/kotlin/com/cloudsync/AniListClient.kt:189:38 Unresolved reference 'headers'.
+e: file:///home/runner/work/cloudsync-plugin/cloudsync-plugin/src/CloudSync/src/main/kotlin/com/cloudsync/AniListClient.kt:189:62 Unresolved reference 'trim'.
+e: file:///home/runner/work/cloudsync-plugin/cloudsync-plugin/src/CloudSync/src/main/kotlin/com/cloudsync/AniListClient.kt:191:21 Cannot infer type for this parameter. Please specify it explicitly.
+e: file:///home/runner/work/cloudsync-plugin/cloudsync-plugin/src/CloudSync/src/main/kotlin/com/cloudsync/AniListClient.kt:191:40 Unresolved reference 'text'.
+e: file:///home/runner/work/cloudsync-plugin/cloudsync-plugin/src/CloudSync/src/main/kotlin/com/cloudsync/AniListClient.kt:197:26 Unresolved reference 'text'.
+e: file:///home/runner/work/cloudsync-plugin/cloudsync-plugin/src/CloudSync/src/main/kotlin/com/cloudsync/CloudSyncPlugin.kt:8:2 Class 'com.lagradost.cloudstream3.plugins.CloudstreamPlugin' was compiled with an incompatible version of Kotlin. The actual metadata version is 2.4.0, but the compiler version 2.1.0 can read versions up to 2.2.0.
+The class is loaded from /home/runner/.gradle/caches/8.12/transforms/fb3886e53c6153c4309547a333d1b7f4/transformed/jetified-cloudstream.jar!/com/lagradost/cloudstream3/plugins/CloudstreamPlugin.class
+e: file:///home/runner/work/cloudsync-plugin/cloudsync-plugin/src/CloudSync/src/main/kotlin/com/cloudsync/CloudSyncPlugin.kt:9:25 Class 'com.lagradost.cloudstream3.plugins.Plugin' was compiled with an incompatible version of Kotlin. The actual metadata version is 2.4.0, but the compiler version 2.1.0 can read versions up to 2.2.0.
+The class is loaded from /home/runner/.gradle/caches/8.12/transforms/fb3886e53c6153c4309547a333d1b7f4/transformed/jetified-cloudstream.jar!/com/lagradost/cloudstream3/plugins/Plugin.class
+e: file:///home/runner/work/cloudsync-plugin/cloudsync-plugin/src/CloudSync/src/main/kotlin/com/cloudsync/CloudSyncPlugin.kt:26:13 Class 'com.lagradost.cloudstream3.plugins.Plugin' was compiled with an incompatible version of Kotlin. The actual metadata version is 2.4.0, but the compiler version 2.1.0 can read versions up to 2.2.0.
+The class is loaded from /home/runner/.gradle/caches/8.12/transforms/fb3886e53c6153c4309547a333d1b7f4/transformed/jetified-cloudstream.jar!/com/lagradost/cloudstream3/plugins/Plugin.class
+e: file:///home/runner/work/cloudsync-plugin/cloudsync-plugin/src/CloudSync/src/main/kotlin/com/cloudsync/GitHubClient.kt:4:35 Unresolved reference 'app'.
+e: file:///home/runner/work/cloudsync-plugin/cloudsync-plugin/src/CloudSync/src/main/kotlin/com/cloudsync/GitHubClient.kt:74:24 Unresolved reference 'post'.
+e: file:///home/runner/work/cloudsync-plugin/cloudsync-plugin/src/CloudSync/src/main/kotlin/com/cloudsync/GitHubClient.kt:107:28 Unresolved reference 'post'.
+e: file:///home/runner/work/cloudsync-plugin/cloudsync-plugin/src/CloudSync/src/main/kotlin/com/cloudsync/GitHubClient.kt:282:21 Unresolved reference 'put'.
+e: file:///home/runner/work/cloudsync-plugin/cloudsync-plugin/src/CloudSync/src/main/kotlin/com/cloudsync/GitHubClient.kt:284:21 Unresolved reference 'get'.
+e: file:///home/runner/work/cloudsync-plugin/cloudsync-plugin/src/CloudSync/src/main/kotlin/com/cloudsync/GitHubClient.kt:319:28 Unresolved reference 'post'.
+e: file:///home/runner/work/cloudsync-plugin/cloudsync-plugin/src/CloudSync/src/main/kotlin/com/cloudsync/GitHubClient.kt:341:31 Argument type mismatch: actual type is 'kotlin.String?', but 'kotlin.String' was expected.
+e: file:///home/runner/work/cloudsync-plugin/cloudsync-plugin/src/CloudSync/src/main/kotlin/com/cloudsync/LocalStore.kt:348:13 Class 'com.lagradost.cloudstream3.syncproviders.providers.LocalList' was compiled with an incompatible version of Kotlin. The actual metadata version is 2.4.0, but the compiler version 2.1.0 can read versions up to 2.2.0.
+The class is loaded from /home/runner/.gradle/caches/8.12/transforms/fb3886e53c6153c4309547a333d1b7f4/transformed/jetified-cloudstream.jar!/com/lagradost/cloudstream3/syncproviders/providers/LocalList.class
+e: file:///home/runner/work/cloudsync-plugin/cloudsync-plugin/src/CloudSync/src/main/kotlin/com/cloudsync/LocalStore.kt:348:13 Class 'com.lagradost.cloudstream3.syncproviders.AccountManager.Companion' was compiled with an incompatible version of Kotlin. The actual metadata version is 2.4.0, but the compiler version 2.1.0 can read versions up to 2.2.0.
+The class is loaded from /home/runner/.gradle/caches/8.12/transforms/fb3886e53c6153c4309547a333d1b7f4/transformed/jetified-cloudstream.jar!/com/lagradost/cloudstream3/syncproviders/AccountManager$Companion.class
+e: file:///home/runner/work/cloudsync-plugin/cloudsync-plugin/src/CloudSync/src/main/kotlin/com/cloudsync/LocalStore.kt:348:13 Class 'com.lagradost.cloudstream3.syncproviders.providers.LocalList' was compiled with an incompatible version of Kotlin. The actual metadata version is 2.4.0, but the compiler version 2.1.0 can read versions up to 2.2.0.
+The class is loaded from /home/runner/.gradle/caches/8.12/transforms/fb3886e53c6153c4309547a333d1b7f4/transformed/jetified-cloudstream.jar!/com/lagradost/cloudstream3/syncproviders/providers/LocalList.class
+e: file:///home/runner/work/cloudsync-plugin/cloudsync-plugin/src/CloudSync/src/main/kotlin/com/cloudsync/LocalStore.kt:354:17 Class 'com.lagradost.cloudstream3.utils.Event' was compiled with an incompatible version of Kotlin. The actual metadata version is 2.4.0, but the compiler version 2.1.0 can read versions up to 2.2.0.
+The class is loaded from /home/runner/.gradle/caches/8.12/transforms/fb3886e53c6153c4309547a333d1b7f4/transformed/jetified-cloudstream.jar!/com/lagradost/cloudstream3/utils/Event.class
+e: file:///home/runner/work/cloudsync-plugin/cloudsync-plugin/src/CloudSync/src/main/kotlin/com/cloudsync/LocalStore.kt:354:17 Class 'com.lagradost.cloudstream3.MainActivity.Companion' was compiled with an incompatible version of Kotlin. The actual metadata version is 2.4.0, but the compiler version 2.1.0 can read versions up to 2.2.0.
+The class is loaded from /home/runner/.gradle/caches/8.12/transforms/fb3886e53c6153c4309547a333d1b7f4/transformed/jetified-cloudstream.jar!/com/lagradost/cloudstream3/MainActivity$Companion.class
+e: file:///home/runner/work/cloudsync-plugin/cloudsync-plugin/src/CloudSync/src/main/kotlin/com/cloudsync/LocalStore.kt:362:17 Class 'com.lagradost.cloudstream3.utils.Event' was compiled with an incompatible version of Kotlin. The actual metadata version is 2.4.0, but the compiler version 2.1.0 can read versions up to 2.2.0.
+The class is loaded from /home/runner/.gradle/caches/8.12/transforms/fb3886e53c6153c4309547a333d1b7f4/transformed/jetified-cloudstream.jar!/com/lagradost/cloudstream3/utils/Event.class
+e: file:///home/runner/work/cloudsync-plugin/cloudsync-plugin/src/CloudSync/src/main/kotlin/com/cloudsync/LocalStore.kt:362:17 Class 'com.lagradost.cloudstream3.MainActivity.Companion' was compiled with an incompatible version of Kotlin. The actual metadata version is 2.4.0, but the compiler version 2.1.0 can read versions up to 2.2.0.
+The class is loaded from /home/runner/.gradle/caches/8.12/transforms/fb3886e53c6153c4309547a333d1b7f4/transformed/jetified-cloudstream.jar!/com/lagradost/cloudstream3/MainActivity$Companion.class
+
+FAILURE: Build failed with an exception.
+
+* What went wrong:
+Execution failed for task ':CloudSync:compileDebugKotlin'.
+> A failure occurred while executing org.jetbrains.kotlin.compilerRunner.GradleCompilerRunnerWithWorkers$GradleKotlinCompilerWorkAction
+   > Compilation error. See log for more details
+
+* Try:
+> Run with --stacktrace option to get the stack trace.
+> Run with --info or --debug option to get more log output.
+> Run with --scan to get full insights.
+> Get more help at https://help.gradle.org.
+
+BUILD FAILED in 1m 6s
+6 actionable tasks: 6 executed
