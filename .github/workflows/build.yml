@@ -68,8 +68,8 @@ jobs:
           chmod +x gradlew
           ./gradlew -p core-test test 2>&1 | tee -a "$GITHUB_WORKSPACE/build.log"
 
-      - name: Setup Android SDK
-        uses: android-actions/setup-android@v3
+      # No separate Android SDK setup step: GitHub's ubuntu runners ship the SDK preinstalled
+      # (ANDROID_HOME is set), and the setup-android action failed on this runner image.
 
       - name: Build Plugins
         run: |
