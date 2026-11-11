@@ -1,3 +1,5 @@
+ Fully built with claude code, sorry not sorry. feel free to fork or contribute :)
+
 # CloudSync
 
 CloudSync is a plugin (extension) for the Android app CloudStream. It keeps your watch history and watch-status lists the same on several devices, for example a Google TV and a tablet. It stores the data in a private GitHub repository that you own. It can also sync your watch-status lists two ways with AniList.
