@@ -6,10 +6,10 @@ import android.content.SharedPreferences
 /** Public client IDs. Neither is a secret; both flows used here work without a client secret. */
 object Config {
     /** Client ID of the GitHub App installed on the private sync repo. */
-    const val GITHUB_CLIENT_ID = "REPLACE_WITH_GITHUB_APP_CLIENT_ID"
+    const val GITHUB_CLIENT_ID = "Iv23ctvuOkOa0R3buvHw"
 
     /** Client ID of the AniList API client (redirect URL https://anilist.co/api/v2/oauth/pin). */
-    const val ANILIST_CLIENT_ID = "REPLACE_WITH_ANILIST_CLIENT_ID"
+    const val ANILIST_CLIENT_ID = "56609"
 
     /** CloudStream's own data store. */
     const val CS_PREFS = "rebuild_preference"
