@@ -33,7 +33,7 @@ There is no build step. The plugin is ready to install.
 
 ### Part B: Install the CloudSync GitHub App on that repository
 
-1. Open this link: `https://github.com/apps/cloudsync-data/installations/new`
+1. Open this link: `https://github.com/apps/cloudsync-for-cloudstream/installations/new`
 2. Choose "Only select repositories".
 3. Select ONLY your data repository (`cloudsync-data`).
 4. Press "Install".
@@ -174,7 +174,7 @@ Nothing runs while CloudStream is closed.
 | Problem | What to check |
 |---|---|
 | "Repository not found, check the URL and try VPN" when adding the repository in CloudStream | The device cannot reach raw.githubusercontent.com. Check the URL. Try opening it in the device's browser. Or enable the jsDelivr / GitHub proxy option in CloudStream's settings. |
-| The plugin says the app is not installed on any repository | Open `https://github.com/apps/cloudsync-data/installations/new`, install the app on your data repository, then press "Check again". |
+| The plugin says the app is not installed on any repository | Open `https://github.com/apps/cloudsync-for-cloudstream/installations/new`, install the app on your data repository, then press "Check again". |
 | The plugin says the sync repository must be private | Make the data repository private, or install the app on a private repository. |
 | "Still no repository found" after sign-in | Make sure the GitHub App is installed on the private repository. Then press "Check again". |
 | "Your GitHub sign-in expired" | Press "Sign in to GitHub" again. Your links and data are kept. |

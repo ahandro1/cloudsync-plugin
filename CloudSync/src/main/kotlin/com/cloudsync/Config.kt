@@ -9,7 +9,7 @@ object Config {
     const val GITHUB_CLIENT_ID = "Iv23ctvuOkOa0R3buvHw"
 
     /** URL slug of the public GitHub App (github.com/apps/<slug>). Blank until it is known. */
-    const val GITHUB_APP_SLUG = "cloudsync-data"
+    const val GITHUB_APP_SLUG = "cloudsync-for-cloudstream"
 
     /** Client ID of the AniList API client (redirect URL https://anilist.co/api/v2/oauth/pin). */
     const val ANILIST_CLIENT_ID = "56609"
