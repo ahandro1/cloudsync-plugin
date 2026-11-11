@@ -1,0 +1,21 @@
+[
+    {
+        "fileHash": "sha256-a4e2cd65b662d0d1bfd8a66ba611cb0720890609719539a9734585a8643644b3",
+        "apiVersion": 1,
+        "repositoryUrl": "https://github.com/ahandro1/cloudsync-plugin",
+        "fileSize": 142468,
+        "status": 1,
+        "language": "en",
+        "authors": [
+            "CloudSync"
+        ],
+        "tvTypes": [
+            "Others"
+        ],
+        "version": 3,
+        "internalName": "CloudSync",
+        "description": "Syncs watch history and watch-status lists between devices through a private GitHub repo, with optional AniList sync.",
+        "url": "https://raw.githubusercontent.com/ahandro1/cloudsync-plugin/builds/CloudSync.cs3",
+        "name": "CloudSync"
+    }
+]
