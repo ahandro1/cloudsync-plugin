@@ -17,6 +17,24 @@ class GitHubException(message: String, val code: Int = 0) : Exception(message)
 /** 401, or not signed in: the UI should ask the user to sign in again. */
 class GitHubAuthException(message: String) : Exception(message)
 
+/** A repository the GitHub App installation can see. */
+data class RepoInfo(val fullName: String, val isPrivate: Boolean)
+
+/** Outcome of looking for the sync repository. Only private repositories are ever selected. */
+sealed class RepoDiscovery {
+    /** [repo] is stored in the settings and ready to use. */
+    data class Selected(val repo: String) : RepoDiscovery()
+
+    /** The app is installed on no repository at all. */
+    object None : RepoDiscovery()
+
+    /** The app can only see public repositories. */
+    data class OnlyPublic(val repos: List<String>) : RepoDiscovery()
+
+    /** The app can see several private repositories; the user has to choose. */
+    data class Multiple(val repos: List<String>) : RepoDiscovery()
+}
+
 class GitHubClient(private val settings: Settings) {
 
     data class DeviceCode(
@@ -44,12 +62,17 @@ class GitHubClient(private val settings: Settings) {
 
     private val refreshMutex = Mutex()
 
+    /** Repo confirmed private in this process (see [verifyPrivate]). */
+    @Volatile
+    private var verifiedRepo: String? = null
+
     private companion object {
         const val API = "https://api.github.com"
         const val DEVICE_CODE_URL = "https://github.com/login/device/code"
         const val TOKEN_URL = "https://github.com/login/oauth/access_token"
         const val USER_AGENT = "CloudSync-Plugin"
         const val REFRESH_MARGIN_MS = 5 * 60 * 1000L
+        const val AUTH_MESSAGE = "GitHub sign-in needed. Open the plugin settings and sign in again."
     }
 
     // --- Device flow -------------------------------------------------------------------------
@@ -61,7 +84,10 @@ class GitHubClient(private val settings: Settings) {
 
     suspend fun awaitDeviceToken(code: DeviceCode): Boolean = withContext(Dispatchers.IO) { awaitDeviceTokenIo(code) }
 
-    suspend fun discoverRepo(): String? = withContext(Dispatchers.IO) { discoverRepoIo() }
+    suspend fun discoverRepo(): RepoDiscovery = withContext(Dispatchers.IO) { discoverRepoIo() }
+
+    /** Makes [fullName] the sync repository. It must be a private repository the app can see. */
+    suspend fun selectRepo(fullName: String) = withContext(Dispatchers.IO) { selectRepoIo(fullName) }
 
     suspend fun getFile(path: String, etag: String? = null): GetResult =
         withContext(Dispatchers.IO) { getFileIo(path, etag) }
@@ -117,10 +143,19 @@ class GitHubClient(private val settings: Settings) {
             val json = parseObject(resp)
             val token = str(json, "access_token")
             if (token != null) {
+                val previousUser = settings.githubUser
                 storeTokens(json, token)
+                settings.githubSignInExpired = false
+                if (settings.lastError == AUTH_MESSAGE) settings.lastError = null
                 val user = fetchLogin()
-                if (user != null) settings.githubUser = user
-                discoverRepoIo()
+                if (user != null) {
+                    // A different account cannot use the previous account's repository.
+                    if (previousUser != null && !previousUser.equals(user, ignoreCase = true)) {
+                        settings.repo = null
+                    }
+                    settings.githubUser = user
+                }
+                discoverRepoIo() // selects the repo when there is exactly one private candidate
                 return true
             }
             when (val err = str(json, "error")) {
@@ -150,12 +185,12 @@ class GitHubClient(private val settings: Settings) {
         return str(parseObject(resp), "login")
     }
 
-    private suspend fun discoverRepoIo(): String? {
+    /** Every repository of every installation of the app (first 100 per installation). */
+    private suspend fun listReposIo(): List<RepoInfo> {
         val instResp = api("GET", "$API/user/installations?per_page=100")
         if (!instResp.isSuccessful) throw failure(instResp)
-        val installations = parseObject(instResp).optJSONArray("installations") ?: return null
-        var firstAny: String? = null
-        var firstPrivate: String? = null
+        val installations = parseObject(instResp).optJSONArray("installations") ?: return emptyList()
+        val out = ArrayList<RepoInfo>()
         for (i in 0 until installations.length()) {
             val id = installations.optJSONObject(i)?.optLong("id", 0L) ?: 0L
             if (id == 0L) continue
@@ -165,14 +200,39 @@ class GitHubClient(private val settings: Settings) {
             for (j in 0 until repos.length()) {
                 val r = repos.optJSONObject(j) ?: continue
                 val name = str(r, "full_name") ?: continue
-                if (firstAny == null) firstAny = name
-                if (r.optBoolean("private", false) && firstPrivate == null) firstPrivate = name
+                if (out.any { it.fullName.equals(name, ignoreCase = true) }) continue
+                out.add(RepoInfo(name, r.optBoolean("private", false)))
             }
-            if (firstPrivate != null) break
         }
-        val chosen = firstPrivate ?: firstAny
-        settings.repo = chosen
-        return chosen
+        return out
+    }
+
+    private suspend fun discoverRepoIo(): RepoDiscovery {
+        val all = listReposIo()
+        if (all.isEmpty()) return RepoDiscovery.None
+        val privates = all.filter { it.isPrivate }.map { it.fullName }.sortedBy { it.lowercase() }
+        if (privates.isEmpty()) {
+            return RepoDiscovery.OnlyPublic(all.map { it.fullName }.sortedBy { it.lowercase() })
+        }
+        val current = settings.repo
+        if (current != null) {
+            val kept = privates.firstOrNull { it.equals(current, ignoreCase = true) }
+            if (kept != null) return RepoDiscovery.Selected(current)
+        }
+        if (privates.size == 1) {
+            val only = privates[0]
+            settings.repo = only
+            return RepoDiscovery.Selected(only)
+        }
+        return RepoDiscovery.Multiple(privates)
+    }
+
+    private suspend fun selectRepoIo(fullName: String) {
+        val match = listReposIo().firstOrNull { it.isPrivate && it.fullName.equals(fullName, ignoreCase = true) }
+            ?: throw GitHubException(
+                "$fullName is not a private repository the CloudSync GitHub App can access. Check the app's installation on GitHub."
+            )
+        settings.repo = match.fullName
     }
 
     fun signOut() {
@@ -181,6 +241,22 @@ class GitHubClient(private val settings: Settings) {
         settings.githubTokenExpiry = 0L
         settings.githubUser = null
         settings.repo = null
+        settings.githubSignInExpired = false
+        verifiedRepo = null
+    }
+
+    /**
+     * GitHub definitively rejected the sign-in: forget the tokens but keep user, repo and links so
+     * that signing in again with the same account continues seamlessly. [rejected] is the token that
+     * was refused; if a newer sign-in replaced it meanwhile, nothing is touched.
+     */
+    private fun markSignInExpired(rejected: String?) {
+        if (settings.githubToken != rejected) return
+        settings.githubToken = null
+        settings.githubRefreshToken = null
+        settings.githubTokenExpiry = 0L
+        settings.githubSignInExpired = true
+        settings.lastError = AUTH_MESSAGE
     }
 
     // --- Files -------------------------------------------------------------------------------
@@ -244,12 +320,40 @@ class GitHubClient(private val settings: Settings) {
         return PutResult.Ok(newSha)
     }
 
+    /**
+     * The selected sync repository. Never discovers one here: the repo may only change through the
+     * settings dialog, so a sync in flight can never continue in a different repository.
+     */
     private suspend fun requireRepo(): String {
-        settings.repo?.let { return it }
-        discoverRepoIo()
-        return settings.repo ?: throw GitHubException(
-            "No sync repository found. Install your GitHub App on the private sync repository."
+        val repo = settings.repo ?: throw GitHubException(
+            "No sync repository is selected. Open the CloudSync settings to choose one."
         )
+        if (verifiedRepo != repo) verifyPrivate(repo)
+        return repo
+    }
+
+    /**
+     * Refuses a repository that is public (e.g. one chosen by version 1, or made public since) or
+     * no longer accessible. Checked once per process and repo.
+     */
+    private suspend fun verifyPrivate(repo: String) {
+        val resp = api("GET", "$API/repos/$repo")
+        if (resp.code == 404) {
+            close(resp)
+            throw GitHubException(
+                "The sync repository $repo cannot be accessed. Check the CloudSync GitHub App's installation on GitHub.",
+                404
+            )
+        }
+        if (!resp.isSuccessful) throw failure(resp)
+        val json = parseObject(resp)
+        if (json.has("private") && !json.optBoolean("private", true)) {
+            if (settings.repo == repo) settings.repo = null
+            throw GitHubException(
+                "The sync repository $repo is public, so CloudSync stopped using it. Open the CloudSync settings to choose a private repository."
+            )
+        }
+        verifiedRepo = repo
     }
 
     // --- HTTP plumbing -----------------------------------------------------------------------
@@ -290,6 +394,7 @@ class GitHubClient(private val settings: Settings) {
                     refreshToken(token, force = true)
                     continue
                 }
+                markSignInExpired(token)
                 throw GitHubAuthException("GitHub rejected the saved sign-in (401). Please sign in again.")
             }
             return resp
@@ -334,6 +439,7 @@ class GitHubClient(private val settings: Settings) {
             val token = str(json, "access_token")
             if (token == null) {
                 if (resp.code >= 500) throw GitHubException("GitHub token refresh failed (HTTP ${resp.code})", resp.code)
+                markSignInExpired(usedToken)
                 throw GitHubAuthException(
                     "GitHub sign-in expired (${str(json, "error_description") ?: str(json, "error") ?: "refresh failed"}). Please sign in again."
                 )

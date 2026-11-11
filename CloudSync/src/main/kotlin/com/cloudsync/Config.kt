@@ -8,6 +8,9 @@ object Config {
     /** Client ID of the GitHub App installed on the private sync repo. */
     const val GITHUB_CLIENT_ID = "Iv23ctvuOkOa0R3buvHw"
 
+    /** URL slug of the public GitHub App (github.com/apps/<slug>). Blank until it is known. */
+    const val GITHUB_APP_SLUG = "cloudsync-data"
+
     /** Client ID of the AniList API client (redirect URL https://anilist.co/api/v2/oauth/pin). */
     const val ANILIST_CLIENT_ID = "56609"
 
@@ -45,6 +48,15 @@ class Settings(context: Context) {
         get() = prefs.getString("gh_repo", null)
         set(v) = put("gh_repo", v)
 
+    /** True when GitHub definitively rejected the saved sign-in; user and repo are kept. */
+    var githubSignInExpired: Boolean
+        get() = prefs.getBoolean("gh_expired", false)
+        set(v) = prefs.edit().putBoolean("gh_expired", v).apply()
+    /** The repo the current profile links belong to; survives sign-out. */
+    var linksRepo: String?
+        get() = prefs.getString("links_repo", null)
+        set(v) = put("links_repo", v)
+
     // --- Device sync --------------------------------------------------------------------------
     /** Per-device "Pause device sync" switch. */
     var devicePaused: Boolean
@@ -75,6 +87,15 @@ class Settings(context: Context) {
     fun anilistUserId(profileId: String): Int = prefs.getInt("al_uid_$profileId", 0)
     fun setAnilistUserId(profileId: String, id: Int) =
         prefs.edit().putInt("al_uid_$profileId", id).apply()
+
+    /** Removes every stored AniList value of [profileId]. */
+    fun clearAnilist(profileId: String) {
+        prefs.edit()
+            .remove("al_token_$profileId")
+            .remove("al_user_$profileId")
+            .remove("al_uid_$profileId")
+            .apply()
+    }
 
     // --- Status lines -------------------------------------------------------------------------
     var lastDeviceSync: Long

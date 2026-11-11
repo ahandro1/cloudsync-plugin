@@ -116,7 +116,8 @@ class SyncEngine(context: Context) {
     }
 
     private suspend fun autoSync() {
-        if (!github.isSignedIn || settings.devicePaused) return
+        // No repository chosen yet: nothing to sync, and no network calls every minute.
+        if (!github.isSignedIn || settings.devicePaused || settings.repo == null) return
         try {
             runAll(forceDevices = false, aniForced = false, only = null)
         } catch (e: CancellationException) {
@@ -161,16 +162,23 @@ class SyncEngine(context: Context) {
 
     // --- Public: index and profiles -----------------------------------------------------------
 
-    suspend fun loadIndex(): IndexFile = mutex.withLock { fetchIndex(useEtag = true).index }
+    suspend fun loadIndex(): IndexFile = mutex.withLock {
+        ensureLinksRepoLocked()
+        fetchIndex(useEtag = true).index
+    }
 
     suspend fun setAnilistPaused(paused: Boolean) {
         mutex.withLock {
+            ensureLinksRepoLocked()
             updateIndex { it.copy(anilistPaused = paused) }
         }
         notifyStatus()
     }
 
-    suspend fun createProfile(name: String): ProfileRef = mutex.withLock { createProfileLocked(name) }
+    suspend fun createProfile(name: String): ProfileRef = mutex.withLock {
+        ensureLinksRepoLocked()
+        createProfileLocked(name)
+    }
 
     suspend fun link(slot: Int, profileId: String?) {
         // Off the main thread: deletes journal files and commits SharedPreferences.
@@ -181,6 +189,7 @@ class SyncEngine(context: Context) {
 
     private suspend fun linkLocked(slot: Int, profileId: String?) {
         mutex.withLock {
+            ensureLinksRepoLocked()
             if (profileId != null) {
                 val other = settings.links().entries.firstOrNull { it.value == profileId && it.key != slot }
                 if (other != null) {
@@ -250,6 +259,7 @@ class SyncEngine(context: Context) {
         // Callers include the settings dialog on the main thread; scan/apply/journal are disk work.
         withContext(Dispatchers.IO) { mutex.withLock {
             try {
+                ensureLinksRepoLocked()
                 var index = refreshIndex(force = forceDevices || aniForced)
                 index = firstRunLocked(index)
                 for ((slot, id) in settings.links().toSortedMap()) {
@@ -304,13 +314,75 @@ class SyncEngine(context: Context) {
     private suspend fun firstRunLocked(index: IndexFile): IndexFile {
         if (settings.defaultLinkDone || !github.isSignedIn || settings.repo == null) return index
         val fresh = fetchIndex(useEtag = true).index
-        val ref = fresh.profiles.firstOrNull { it.name.equals(DEFAULT_PROFILE_NAME, ignoreCase = true) }
-            ?: createProfileLocked(DEFAULT_PROFILE_NAME)
+        val ref = fresh.profiles.firstOrNull { isDefaultName(it.name) }
+            ?: createDefaultProfileLocked()
         if (settings.linkOf(0) == null && settings.links().values.none { it == ref.id }) {
             settings.setLink(0, ref.id)
         }
         settings.defaultLinkDone = true
         return indexState?.index ?: fresh
+    }
+
+    private fun isDefaultName(name: String): Boolean = name.equals(DEFAULT_PROFILE_NAME, ignoreCase = true)
+
+    /**
+     * Creates the "Default" shared profile unless one exists by the time the index is written.
+     * Two devices doing this at once would otherwise create one each: the index update is a
+     * compare-and-swap with retry, so the check is repeated on the freshly read index. Returns the
+     * "Default" profile that ended up first in the index (ours, or the other device's). Caller holds [mutex].
+     */
+    private suspend fun createDefaultProfileLocked(): ProfileRef {
+        val id = UUID.randomUUID().toString().replace("-", "").take(12)
+        val ref = ProfileRef(id = id, name = DEFAULT_PROFILE_NAME)
+        val file = ProfileFile(id = id, name = DEFAULT_PROFILE_NAME)
+        // File first, so the index never points at a missing file.
+        val put = github.putFile(
+            "profiles/$id.json", Json.encodeProfile(file), null, "create profile $DEFAULT_PROFILE_NAME from ${Build.MODEL}"
+        )
+        if (put !is GitHubClient.PutResult.Ok) {
+            throw IllegalStateException("Could not create the profile file. Try again.")
+        }
+        val updated = updateIndex { idx ->
+            if (idx.profiles.any { isDefaultName(it.name) }) idx else idx.copy(profiles = idx.profiles + ref)
+        }
+        val winner = updated.profiles.firstOrNull { isDefaultName(it.name) } ?: ref
+        if (winner.id == id) {
+            cache[id] = Cached(file, put.sha, null)
+        } else {
+            cache.remove(id) // lost the race; the orphan profiles/<id>.json file is harmless
+        }
+        return winner
+    }
+
+    // --- Links belong to one repository -------------------------------------------------------
+
+    /**
+     * Profile links, journals and AniList accounts belong to one data repo. When the repo changed
+     * since they were made, forget them (local CloudStream data is not touched). Existing installs
+     * that predate [Settings.linksRepo] just record the current repo. Caller holds [mutex].
+     */
+    private suspend fun ensureLinksRepoLocked() {
+        val repo = settings.repo ?: return
+        val owner = settings.linksRepo
+        if (owner == null) {
+            settings.linksRepo = repo
+            return
+        }
+        if (owner.equals(repo, ignoreCase = true)) return
+        withContext(Dispatchers.IO) {
+            for ((slot, id) in settings.links()) {
+                store.deleteJournal(id) // also removes the intent file
+                store.clearPending(slot, store.pendingTimes(slot))
+                settings.clearAnilist(id)
+                settings.setLink(slot, null)
+                lastAniRun.remove(id)
+            }
+            cache.clear()
+            lastAniRun.clear()
+            indexState = null
+            settings.defaultLinkDone = false
+            settings.linksRepo = repo
+        }
     }
 
     // --- Index --------------------------------------------------------------------------------

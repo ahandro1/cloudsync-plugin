@@ -1,6 +1,6 @@
 # CloudSync
 
-CloudSync is a plugin (extension) for the Android app CloudStream. It keeps your watch history and watch-status lists the same on several devices, for example a Google TV and a tablet. It stores the data in a private GitHub repository. It can also sync your watch-status lists two ways with AniList.
+CloudSync is a plugin (extension) for the Android app CloudStream. It keeps your watch history and watch-status lists the same on several devices, for example a Google TV and a tablet. It stores the data in a private GitHub repository that you own. It can also sync your watch-status lists two ways with AniList.
 
 ## What is synced
 
@@ -14,86 +14,50 @@ CloudSync is a plugin (extension) for the Android app CloudStream. It keeps your
 | Per-episode position and watched marks | |
 | Selected season, episode and dub | |
 
-## Before you start
-
-You need:
+## What you need
 
 - A GitHub account.
 - CloudStream installed on each device.
-- Access to a computer for the one-time setup. The setup uses a web browser and a text editor.
 - Optional: an AniList account, if you want AniList sync.
 
-## Part 1: One-time setup on a computer
+There is no build step. The plugin is ready to install.
 
-Follow these sections in order.
+## Setup (about 5 minutes)
 
-### 1. Create two GitHub repositories
+### Part A: Create a private repository for your data
 
-1. Create a PUBLIC repository for the plugin code. For example, `cloudsync-plugin`.
-2. Create a PRIVATE repository for your data. For example, `cloudsync-data`.
-3. The private repository can stay completely empty. The plugin creates the files it needs.
+1. Open this link: `https://github.com/new?name=cloudsync-data&visibility=private`
+2. Keep the visibility set to Private.
+3. Tick "Add a README file".
+4. Press "Create repository".
 
-### 2. Create a GitHub App
+### Part B: Install the CloudSync GitHub App on that repository
 
-1. On GitHub, go to Settings, then Developer settings, then GitHub Apps, then New GitHub App.
-2. Enter any unique name.
-3. Set Homepage URL to the URL of the public repository. Any valid URL works.
-4. Under Webhook, untick "Active".
-5. Tick "Enable Device Flow".
-6. Untick "Expire user authorization tokens". Look under the optional features after creation, or in the form if it is shown there.
-7. Under Repository permissions, find Contents and set it to "Read and write".
-8. Under "Where can this GitHub App be installed", choose "Only on this account".
-9. Create the app.
-10. Copy the Client ID. It starts with `Iv`.
-11. Choose "Install App", then install it on your account.
-12. Choose "Only select repositories". Select ONLY the private data repository.
+1. Open this link: `https://github.com/apps/cloudsync-data/installations/new`
+2. Choose "Only select repositories".
+3. Select ONLY your data repository (`cloudsync-data`).
+4. Press "Install".
 
-### 3. Create an AniList API client (only if you want AniList sync)
+Selecting only this one repository is what limits the plugin's access to that repository alone.
 
-1. Go to anilist.co. Open Settings, then Developer, then Create New Client.
-2. Enter any name.
-3. Set the Redirect URL to exactly `https://anilist.co/api/v2/oauth/pin`.
-4. Copy the client ID. It is a number.
-
-### 4. Fill in the placeholders
-
-Open these two files in a text editor.
-
-**File 1:** `CloudSync/src/main/kotlin/com/cloudsync/Config.kt`
-
-| Replace this text | With this value |
-|---|---|
-| `REPLACE_WITH_GITHUB_APP_CLIENT_ID` | The GitHub App Client ID from step 2 |
-| `REPLACE_WITH_ANILIST_CLIENT_ID` | The AniList client ID from step 3 |
-
-**File 2:** `repo.json` (in the project root)
-
-| Replace this text | With this value |
-|---|---|
-| `OWNER/REPO` | Your public repository, for example `yourname/cloudsync-plugin` |
-
-These IDs are not secrets. They can be stored in the public repository.
-
-### 5. Push the code to GitHub
-
-1. Push this folder to the `main` branch of the public repository.
-2. GitHub Actions runs the "Build" workflow. It compiles the plugin and publishes it to a branch called `builds`.
-3. If the build fails, the log is published to a branch called `build-logs`, in a file called `build.log`. Open that file to see the error.
-
-## Part 2: Install on each device
+### Part C: Sign in on each device
 
 Do these steps on every device (for example, the TV and the tablet).
 
-1. In CloudStream, go to Settings, then Extensions, then Add repository.
-2. Enter this URL, with your public repository filled in:
-   `https://raw.githubusercontent.com/ahandro1/cloudsync-plugin/main/repo.json`
-3. Open that repository in the Extensions list. Install "CloudSync".
-4. Open the plugin settings. Press the gear icon next to the plugin in the extensions list.
+1. In CloudStream, go to Settings → Extensions → Add repository.
+2. Enter this URL: `https://raw.githubusercontent.com/ahandro1/cloudsync-plugin/main/repo.json`
+3. Install "CloudSync" from the list.
+4. Open its settings by pressing the gear icon next to it.
 5. Press "Sign in to GitHub". The plugin shows a short code.
-6. On a phone or computer, open `github.com/login/device`. Enter the code and approve it. Nothing has to be typed on the TV.
+6. On a phone or computer, open `github.com/login/device`, enter the code, and approve it. Nothing has to be typed on a TV.
 7. The device's default CloudStream profile is linked automatically to a shared profile called "Default". Sync starts on its own.
 
-## Part 3: Profiles
+Notes:
+
+- Finish the first device's first sync before you sign in on a second device.
+- If the app can reach more than one private repository, the plugin asks which one to use. A public repository is never used.
+
+## Profiles
 
 Each device has its own list of CloudStream profiles. A shared profile is the copy of your data in the private repository.
 
@@ -111,10 +75,10 @@ Notes:
 - One shared profile can be linked to one local profile per device.
 - Unlinking never deletes anything on the device.
 
-## Part 4: AniList
+## AniList
 
 1. Each linked profile has its own "Sign in to AniList" button. Different profiles can use different AniList accounts.
-2. This sign-in belongs to the plugin. It is separate from CloudStream's own AniList account.
+2. Sign-in uses a client built into the plugin, so there is nothing to create. This sign-in is separate from CloudStream's own AniList account.
 3. You only need to sign in on ONE device per shared profile. A tablet or phone is the easiest choice.
 4. The other devices get the result through device sync.
 5. On a TV, the practical way is to sign in on the tablet instead.
@@ -143,7 +107,22 @@ AniList "Rewatching" counts as Watching.
 - Removing a bookmark in CloudStream does not delete the AniList entry.
 - Removing an AniList entry does not remove the bookmark in CloudStream.
 
-## Part 5: Controls
+### First AniList sync
+
+The first AniList sync for a profile compares your CloudStream bookmarks with your AniList list:
+
+| Situation | What happens |
+|---|---|
+| Bookmarked in CloudStream, not on AniList | Added to AniList with the matching status |
+| On both, same status | Nothing changes |
+| On both, different status, bookmark is older than the plugin install | AniList wins |
+| On both, different status, bookmark changed after the plugin install | The more recent change wins |
+| On AniList only | Nothing. The plugin never creates CloudStream bookmarks |
+| Cannot be matched with certainty | Left alone and listed as unmatched |
+
+Note: the same show bookmarked from two streaming extensions is treated as one AniList entry, so both bookmarks are kept on the same status.
+
+## Controls
 
 Open the plugin settings to find these controls.
 
@@ -174,26 +153,36 @@ Other buttons in the settings:
 
 Nothing runs while CloudStream is closed.
 
+## Privacy and trust
+
+- Your data is stored only in your own private GitHub repository. The plugin author runs no server and receives no data.
+- The GitHub sign-in can only reach the repositories you installed the app on, which is why you should select only the data repository.
+- The GitHub App belongs to the plugin author. GitHub Apps let their owner create a private key that could access the repositories the app is installed on. The author states that no such key exists. If you would rather not rely on that, build your own copy with your own GitHub App (see "For developers").
+- Other CloudStream extensions run in the same app and could in theory read the plugin's saved logins.
+- Every sync is a commit, so the data repository's history grows slowly.
+
 ## Good to know
 
 - The first time a device is linked to a shared profile, nothing on the device is deleted. If the same item exists on both sides, the copy already in the repository wins.
 - If the same item is changed on two devices while both are offline, the later change wins. The later change is decided by the device clock.
 - A synced bookmark only opens on a device that has the same streaming extension installed.
 - A device that has been offline for more than 180 days can bring back items that were deleted on other devices.
-- Other CloudStream extensions run in the same app. In theory, they could read the plugin's saved logins. The GitHub login can only reach the one private data repository.
 - The plugin relies on CloudStream's internal data format. A future CloudStream update may need a plugin update.
 
 ## Troubleshooting
 
 | Problem | What to check |
 |---|---|
-| The build failed | Open the `build.log` file on the `build-logs` branch. |
+| "Repository not found, check the URL and try VPN" when adding the repository in CloudStream | The device cannot reach raw.githubusercontent.com. Check the URL. Try opening it in the device's browser. Or enable the jsDelivr / GitHub proxy option in CloudStream's settings. |
+| The plugin says the app is not installed on any repository | Open `https://github.com/apps/cloudsync-data/installations/new`, install the app on your data repository, then press "Check again". |
+| The plugin says the sync repository must be private | Make the data repository private, or install the app on a private repository. |
 | "Still no repository found" after sign-in | Make sure the GitHub App is installed on the private repository. Then press "Check again". |
+| "Your GitHub sign-in expired" | Press "Sign in to GitHub" again. Your links and data are kept. |
 | Sign-in code expired | Press "Sign in to GitHub" again. |
 | The status line shows an error | Read the error text. Then press "Sync devices now" or "Sync AniList now". |
 | Items are not syncing | Check that device sync is not paused on this device. Check that the local profile is linked (not "Not synced"). |
 
-## For developers
+## For developers and building your own copy
 
 - The pure logic (merge rules, AniList status merge, title matching) is in `CloudSync/src/main/kotlin/com/cloudsync/core/`.
 - Its unit tests are in `core-test/`.
@@ -202,3 +191,24 @@ Nothing runs while CloudStream is closed.
 - The data in the private repository has this layout:
   - `index.json`: the list of shared profiles and the AniList pause switch.
   - `profiles/<id>.json`: one file for each shared profile.
+
+### Build your own copy
+
+1. Fork the repository `ahandro1/cloudsync-plugin` on GitHub.
+2. Create your own GitHub App with these settings:
+   - Device Flow: on.
+   - "Expire user authorization tokens": off.
+   - Webhook: off.
+   - Repository permissions, Contents: "Read and write".
+   Install it on your data repository.
+3. Optional: create your own AniList API client. Set the redirect URL to exactly `https://anilist.co/api/v2/oauth/pin`.
+4. In `CloudSync/src/main/kotlin/com/cloudsync/Config.kt`, put in your client IDs. Put your GitHub App's URL slug in `GITHUB_APP_SLUG`.
+5. Change the two URLs in `repo.json` to your fork. Change the default repository name in the root `build.gradle.kts` to your fork as well.
+6. Push to `main`. GitHub Actions publishes the plugin to a branch called `builds`.
+7. If the build fails, the log is published to `build-logs/build.log`. Open that file to see the error.
+
+Client IDs are not secrets. They can be stored in the public repository.
+
+## License
+
+GPL-3.0. See the `LICENSE` file.

@@ -49,6 +49,7 @@ object SettingsDialog {
     private const val BTN = 0xFF3A3A3A.toInt()
     private const val BTN_PRESSED = 0xFF1565C0.toInt()
     private const val BTN_FOCUSED = 0xFF1E88E5.toInt()
+    private const val MAX_REPO_BUTTONS = 25
 
     private class Ui(private val ctx: Context, private val engine: SyncEngine) {
         private val settings: Settings get() = engine.settings
@@ -72,6 +73,16 @@ object SettingsDialog {
         private var indexLoading = false
         private var indexError: String? = null
 
+        // Last result of looking for the sync repository (null = not looked up yet)
+        private var discovery: RepoDiscovery? = null
+
+        private val installHint: String
+            get() = if (Config.GITHUB_APP_SLUG.isNotBlank()) {
+                "Install it from github.com/apps/${Config.GITHUB_APP_SLUG}/installations/new"
+            } else {
+                "Install the CloudSync GitHub App on your private sync repository"
+            }
+
         fun open() {
             root.orientation = LinearLayout.VERTICAL
             showing = true
@@ -82,6 +93,7 @@ object SettingsDialog {
                 engine.onStatusChanged = null
                 scope.cancel()
             }
+            if (github.isSignedIn && settings.repo == null) checkRepo()
         }
 
         // ---- rendering ------------------------------------------------------------------------
@@ -139,23 +151,60 @@ object SettingsDialog {
                     }
                     add(button("Cancel", "login_cancel") { cancelLogin() }.also { it.isEnabled = true; it.alpha = 1f }, 8)
                 } else {
+                    if (settings.githubSignInExpired) {
+                        add(text("Your GitHub sign-in expired. Sign in again to continue syncing.", WARN), 6)
+                    }
                     add(button("Sign in to GitHub", "gh_signin") { startLogin() }, 6)
                 }
                 return
             }
             if (settings.repo == null) {
-                add(
-                    text(
-                        "Signed in as ${settings.githubUser ?: "?"}, but the CloudSync GitHub App is not " +
-                            "installed on any repository yet. Install it on your private sync repo, then press Check again."
-                    ), 6
-                )
-                add(button("Check again", "gh_check") {
-                    op {
-                        val r = github.discoverRepo()
-                        if (r == null) throw IllegalStateException("Still no repository found.") else "Found repository $r"
+                val who = settings.githubUser ?: "?"
+                val found = discovery
+                when (found) {
+                    null -> add(text("Signed in as $who. No sync repository is selected yet."), 6)
+                    is RepoDiscovery.None -> {
+                        add(
+                            text(
+                                "Signed in as $who, but the CloudSync GitHub App is not installed on any " +
+                                    "repository. $installHint, then press Check again."
+                            ), 6
+                        )
                     }
-                }, 8)
+                    is RepoDiscovery.OnlyPublic -> {
+                        add(
+                            text(
+                                "Signed in as $who. The CloudSync GitHub App is only installed on public " +
+                                    "repositories. The sync repository must be private, because it holds your " +
+                                    "watch history. Install the app on a private repository, then press Check again."
+                            ), 6
+                        )
+                    }
+                    is RepoDiscovery.Multiple -> {
+                        add(
+                            text(
+                                "Signed in as $who. The CloudSync GitHub App can access several private " +
+                                    "repositories. Choose the one that should hold the sync data. It is best to " +
+                                    "install the app on only one repository."
+                            ), 6
+                        )
+                        val shown = found.repos.take(MAX_REPO_BUTTONS)
+                        shown.forEachIndexed { i, name ->
+                            add(button(name, "repo_$i") { chooseRepo(name) }, 6)
+                        }
+                        if (found.repos.size > shown.size) {
+                            add(
+                                text(
+                                    "Showing ${shown.size} of ${found.repos.size} repositories. " +
+                                        "Remove the app from the others on GitHub, then press Check again.",
+                                    DIM
+                                ), 6
+                            )
+                        }
+                    }
+                    is RepoDiscovery.Selected -> Unit // settings.repo is set; not rendered here
+                }
+                add(button("Check again", "gh_check") { checkRepo() }, 8)
                 add(button("Sign out", "gh_signout") { confirmSignOut() }, 6)
             } else {
                 add(text("GitHub: ${settings.githubUser ?: "?"} · ${settings.repo}"), 6)
@@ -261,6 +310,32 @@ object SettingsDialog {
             }
         }
 
+        /** Looks for the sync repository and remembers the result for rendering. */
+        private fun checkRepo() {
+            op {
+                val d = github.discoverRepo()
+                if (d is RepoDiscovery.Selected) {
+                    discovery = null
+                    index = null
+                    indexError = null
+                    "Using repository ${d.repo}"
+                } else {
+                    discovery = d
+                    null
+                }
+            }
+        }
+
+        private fun chooseRepo(name: String) {
+            op {
+                github.selectRepo(name)
+                discovery = null
+                index = null
+                indexError = null
+                "Using repository $name"
+            }
+        }
+
         private suspend fun refreshIndex() {
             try {
                 index = engine.loadIndex()
@@ -310,6 +385,7 @@ object SettingsDialog {
                     }
                     focusTag = null
                     render()
+                    if (ok && settings.repo == null) checkRepo()
                 } catch (e: CancellationException) {
                     throw e
                 } catch (e: Throwable) {
@@ -336,6 +412,7 @@ object SettingsDialog {
         private fun confirmSignOut() {
             confirm("Sign out of GitHub on this device?", "Sign out") {
                 github.signOut()
+                discovery = null
                 index = null
                 indexError = null
                 message = null

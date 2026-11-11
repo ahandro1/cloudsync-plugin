@@ -80,17 +80,23 @@ class LocalStore(context: Context, private val settings: Settings) {
             val ids = out.keys.filter { it.startsWith(resumePrefix) }.map { it.removePrefix(resumePrefix) }
             for (id in ids) {
                 if (id.isEmpty()) continue
-                val hk = "${Keys.HEADER_CACHE}/$id"
-                if (all.containsKey(hk)) {
-                    val typed = toTyped(all[hk]) ?: continue
-                    out["h/$id"] = typed
-                }
+                val typed = headerValue(all, "${Keys.HEADER_CACHE}/$id") ?: continue
+                out["h/$id"] = typed
             }
         } catch (t: Throwable) {
             Log.e(TAG, "scan($slot) failed", t)
         }
         return out
     }
+
+    /**
+     * A show's header (name, poster, url) as CloudStream would find it. CloudStream's Downloads
+     * screen moves headers that the *currently selected* profile does not need to a backup key,
+     * and its home screen restores them from there, so a header used only by another profile's
+     * continue-watching list is often found only under the backup key.
+     */
+    private fun headerValue(all: Map<String, *>, localKey: String): Typed? =
+        toTyped(all[localKey]) ?: toTyped(all["$BACKUP_PREFIX$localKey"])
 
     // --- Apply --------------------------------------------------------------------------------
 
@@ -105,7 +111,8 @@ class LocalStore(context: Context, private val settings: Settings) {
                 for (c in changes) {
                     val rel = c.relKey
                     val local = Keys.toLocal(rel, slot) ?: continue
-                    val current = toTyped(all[local])
+                    val current =
+                        if (Keys.isHeader(rel)) headerValue(all, local) else toTyped(all[local])
                     if (current != c.expected) continue
                     if (c.entry.d) {
                         if (Keys.isHeader(rel)) continue
@@ -117,6 +124,15 @@ class LocalStore(context: Context, private val settings: Settings) {
                         editor.remove(local)
                     } else {
                         if (!write(editor, local, c.entry)) continue
+                        if (Keys.isHeader(rel)) {
+                            // Keep one copy: a stale backup must not shadow or be restored over the
+                            // value just written (CloudStream moves it back to a backup if unused).
+                            val backup = "$BACKUP_PREFIX$local"
+                            if (all.containsKey(backup)) {
+                                editor.remove(backup)
+                                touched.add(backup)
+                            }
+                        }
                     }
                     touched.add(local)
                     applied.add(rel)
@@ -371,5 +387,6 @@ class LocalStore(context: Context, private val settings: Settings) {
         const val PENDING_PREFS = "cloudsync_pending"
         const val MUTE_FALLBACK_MS = 5000L
         const val INTENT_PREFIX = "intent_"
+        const val BACKUP_PREFIX = "BACKUP_"
     }
 }
